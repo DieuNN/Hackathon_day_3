@@ -1,8 +1,12 @@
 import Animal "animal";
 import CustomList "list";
+import Debug "mo:base/Debug";
+import ExperimentalCycles "mo:base/ExperimentalCycles";
 import HashMap "mo:base/HashMap";
+import Iter "mo:base/Iter";
 import Laptop "custom";
 import List "mo:base/List";
+import Nat "mo:base/Nat";
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 
@@ -102,6 +106,76 @@ actor Main {
           return#ok("Update successfully")
         };
       }
+    };
+
+    public shared({caller}) func deleteFavoriteNumber(n : Nat) : async Result.Result<Text, Text> {
+      let temp = hashMap.get(caller);
+      switch(temp) {
+        case null {
+          return#err("You have not register your favorite number yet!");
+        };
+        case (?any) {
+          if(temp == n) {
+            switch(hashMap.remove(caller)) {
+              case null {
+                return#err("Something bad happened!");
+              };
+              case (?any) {
+                return#ok("Deleted");
+              }
+            }
+          };
+          return#err("That wasn't your number");
+        };
+      }
+    };
+
+    
+
+
+    // Challenge 16 : Write a function deposit_cycles that allow anyone to deposit cycles into the canister. 
+    // This function takes no parameter but returns n of type Nat corresponding to the amount of cycles deposited by the call.
+    public func depositCycles() : async Nat {
+      let depositAmount = 10000000;
+      ExperimentalCycles.add(depositAmount);
+
+      Debug.print(Nat.toText(ExperimentalCycles.balance()));
+
+      return depositAmount;
+    };
+
+    // Challenge 17 : Not yet implemented
+
+    // Challenge 18:  Rewrite the counter (of day 1) but this time the counter will be kept accross ugprades. 
+    // Also declare a variable of type Nat called versionNumber that will keep track of how many times your canister has been upgraded.
+    stable var counter = 0;
+    public func increaseCounter() : async () {
+      counter+=1;
+    };
+    public func showCounter() : async Nat {
+      return counter + 0;
+    };
+
+    // Any code change makes version number update
+    stable var versionNumber = 0;
+    
+
+    public func showVersionNumber() : async Nat {
+      return versionNumber;
+    };
+
+    // Challenge 19 : In a new file, copy and paste the functionnalities you've created in challenges 12 to 15.
+    // This time the hashmap and all records should be preserved accross upgrades.
+    stable var entries : [(Principal, Nat)] = [];
+    stable var hashMapSize: Nat = entries.size();
+
+    system func preupgrade() {
+      entries := Iter.toArray(hashMap.entries());
+    };
+
+    system func postupgrade() {
+      versionNumber := versionNumber + 1;
+      hashMap:= HashMap.fromIter<Principal, Nat>(entries.vals(), hashMapSize, Principal.equal, Principal.hash );
     };
 
 };
